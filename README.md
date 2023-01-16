@@ -1,6 +1,11 @@
 # CS118 Project 1
 
-This is the repo for UCLA, Winter 2023 CS118 project 1.
+Web Server Implementation using BSD Sockets
+
+## Members
+
+Dylan Phe 505834475
+Mike Shi 
 
 ## Makefile
 
