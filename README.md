@@ -6,7 +6,7 @@ Web Server Implementation using BSD Sockets
 
 Dylan Phe 505834475
 
-Mike Shi 
+Xuanzhe Han 505536013
 
 ## Makefile
 
