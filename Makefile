@@ -7,7 +7,7 @@ USERID=123456789
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-all: server
+all: server client
 server: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS)
 
