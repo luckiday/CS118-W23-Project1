@@ -6,25 +6,54 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <fcntl.h>
 #include <unistd.h>
 
 #define PORT 15635
 #define BACKLOG 5
+#define MAX_REQ_LEN 1024
+
+
+
+void handle_connection(int cli_socket) {
+    char buffer[MAX_REQ_LEN];
+    char *method;
+    char *url;
+    char *httpvers;
+    char *header, *value;
+
+    int valread = read(cli_socket, buffer, 1024);
+
+    method = strtok(buffer, " ");
+    printf("Method: %s\n", method);
+    url = strtok(NULL, " ");
+    printf("URL: %s\n", url);
+    httpvers = strtok(NULL, "\r\n");
+    printf("HTTP Version: %s\n", httpvers);
+
+    //TO DO: Parse header values
+    /*while ((header = strtok(NULL, ": ")) != NULL) {
+        value = strtok(NULL, "\r\n");
+    }
+    printf("%s: %s\n", header, value);*/
+
+    int file_fd = open(url + 1, O_RDONLY, S_IRUSR);
+    
+    if (file_fd == -1) {
+        char *res = "HTTP/1.0 404 Not Found\r\n\r\n";
+        write(cli_socket, res, 100);
+        perror("webserver: Closing connection, file not found");
+        close(cli_socket);
+    }
+    write(cli_socket, "HTTP/1.0 200 OK\r\n\r\n", 100);
+    close(cli_socket);
+
+
+
+}
 
 int main(int argc, char const *argv[]) {
-    int server_fd, newsock_fd, valread;
-
-    char buffer[1024] = {0};
-    char *responsemsg =
-      "HTTP/1.1 200 OK\nConnection: close\nDate: Tue, 18 Aug 2015 15:44:04 "
-      "GMT\nServer: Apache/2.2.3 (CentOS)\nLast-Modified: Tue, 18 Aug 2015 "
-      "15:11:03 GMT\nContent-Length: 6821\nontent-Type: text/html\n";
-      char *parsedmsg[] = {0};
-    char *command = "";
-    char *path = "";
-    char *host = "";
-    bool connection = true;
-    char *useragent = "";
+    int server_fd, newsock_fd;
 
     // Create a TCP server socket using socket() syscall
     // socket() returns -1 if failed.
@@ -63,8 +92,9 @@ int main(int argc, char const *argv[]) {
 
     printf("webserver: server is listening on port: %d\n", PORT);
 
-    // To listen continously
+    // Server listening indefinitely
     while(1) {
+
         if ((newsock_fd = accept(server_fd, (struct sockaddr *) &cli_addr, (socklen_t * ) & addrlen)) == -1) {
             perror("webserver:  accept() failure error.");
             exit(EXIT_FAILURE);
@@ -74,18 +104,6 @@ int main(int argc, char const *argv[]) {
         inet_ntop(AF_INET, &(cli_addr.sin_addr), client_ip, INET_ADDRSTRLEN);
         printf("webserver: connected to client: %s\n", client_ip);
 
-        valread = read(newsock_fd, buffer, 1024);
-        int iterator = 0;
-        const char delimeter[2] = " ";
-        char *token = strtok(buffer, delimeter);
-        while (token != NULL) {
-            // parsedmsg[iterator] = token;
-            printf("%s\n", token);
-            // iterator++;
-            token = strtok(NULL, delimeter);
-        }
-
-        // printf("%s\n", buffer);
-        send(newsock_fd, responsemsg, strlen(responsemsg), 0);
+        handle_connection(newsock_fd);
     }
 }

@@ -12,8 +12,7 @@ int main(int argc, char const *argv[]) {
   int sock = 0, valread;
   struct sockaddr_in serv_addr;
   char *hello =
-      "GET /somedir/page.html HTTP/1.1\nHost: www.someschool.edu\nConnection: "
-      "close\nUser-agent: Mozilla/5.0\nAccept-language: fr\n";
+      "GET /index.html HTTP/1.1\r\n\r\n";
   char buffer[1024] = {0};
 
   if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
