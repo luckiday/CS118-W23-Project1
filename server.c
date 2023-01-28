@@ -10,7 +10,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#define PORT 8080
+#define PORT 15635
 #define BACKLOG 5
 #define MAX_REQ_LEN 1024
 #define MAX_BLOCK_SIZE 1024
@@ -82,14 +82,7 @@ void handle_connection(int cli_socket) {
         contenttype = "Content-Type: application/pdf\r\n"; 
     }
 
-    // TO DO: if file exist, save the content to buffer
-    // Does not work because the downloaded data is not the same 
-    // since it contains 'NULL H' at the beginning.
-    char file_buf[file_size * sizeof(char)];
-    memset(file_buf, 0, file_size * sizeof(char));
-    if (read(file_fd, file_buf, file_size) < 0){
-		perror("webserver: Read error.");
-	}
+
 
     //Send response message
     char *res = "HTTP/1.1 200 OK\r\n";
@@ -97,7 +90,16 @@ void handle_connection(int cli_socket) {
     write(cli_socket, contentlen, strlen(contentlen));
     write(cli_socket, contenttype, strlen(contenttype));
     write(cli_socket, "\r\n", 4);
-    write(cli_socket, file_buf, strlen(file_buf));
+    // TO DO: if file exist, save the content to buffer
+    char file_buf[MAX_BLOCK_SIZE];
+    //memset(file_buf, 0, file_size * sizeof(char));
+    size_t bytes_read;
+    while (bytes_read = read(file_fd, file_buf, MAX_BLOCK_SIZE) > 0) {
+        write(cli_socket, file_buf, strlen(file_buf));
+    }
+    /*if (read(file_fd, file_buf, file_size) < 0) {
+            perror("webserver: Read error.");
+	}*/
     close(file_fd);
     close(cli_socket);
 }
