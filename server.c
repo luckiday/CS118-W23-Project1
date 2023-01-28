@@ -83,6 +83,8 @@ void handle_connection(int cli_socket) {
     }
 
     // TO DO: if file exist, save the content to buffer
+    // Does not work because the downloaded data is not the same 
+    // since it contains 'NULL H' at the beginning.
     char file_buf[file_size * sizeof(char)];
     memset(file_buf, 0, file_size * sizeof(char));
     if (read(file_fd, file_buf, file_size) < 0){
