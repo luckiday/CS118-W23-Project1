@@ -13,7 +13,7 @@
 #define PORT 15635
 #define BACKLOG 5
 #define MAX_REQ_LEN 1024
-#define MAX_BLOCK_SIZE 1024
+#define MAX_BLOCK_SIZE 4096
 
 #define DEFAULT_EXT "Content-Type: application/octet-stream"
 
@@ -92,10 +92,19 @@ void handle_connection(int cli_socket) {
     write(cli_socket, "\r\n", 4);
     // TO DO: if file exist, save the content to buffer
     char file_buf[MAX_BLOCK_SIZE];
-    //memset(file_buf, 0, file_size * sizeof(char));
-    size_t bytes_read;
-    while (bytes_read = read(file_fd, file_buf, MAX_BLOCK_SIZE) > 0) {
-        write(cli_socket, file_buf, strlen(file_buf));
+    memset(file_buf, 0, MAX_BLOCK_SIZE);
+    while (1) {
+        size_t b_read, b_written;
+        b_read = read(file_fd, file_buf, sizeof(file_buf));
+        if (b_read == 0) // We're done reading from the file
+			break;
+
+        char *p = file_buf;
+        while (b_read > 0) {
+            b_written = write(cli_socket, file_buf, b_read);
+            b_read -= b_written;
+            p+=b_written;
+        }
     }
     /*if (read(file_fd, file_buf, file_size) < 0) {
             perror("webserver: Read error.");

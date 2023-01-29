@@ -6,13 +6,13 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#define PORT 8080
+#define PORT 15635
 
 int main(int argc, char const *argv[]) {
   int sock = 0, valread;
   struct sockaddr_in serv_addr;
   char *hello =
-      "GET /ind1ex.html HTTP/1.1\r\n\r\n";
+      "GET /img_test.jpg HTTP/1.1\r\n\r\n";
   char buffer[1024] = {0};
 
   if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
