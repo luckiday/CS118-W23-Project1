@@ -18,7 +18,7 @@
 // Handle client's GET request
 void handle_GET(int cli_socket, char* filePath) {
     // open requested file
-    FILE* f_fd = fopen(filePath, "r");
+    FILE* f_fd = fopen(filePath, "rb");
     if (f_fd == NULL) {
         char res_buffer[1024];
         sprintf(res_buffer, "HTTP/1.1 404 NOT FOUND\r\n"
@@ -38,24 +38,25 @@ void handle_GET(int cli_socket, char* filePath) {
     sprintf(f_len, "%ld", f_size);
 
     // Checking file extension to set content-type
+    // Two additional extensions supported over the minimum given
     char *f_ext;
     char *contenttype = DEFAULT_EXT;
     if (strchr(filePath, '.') != NULL) {
         f_ext = strrchr(filePath, '.');
         if (strcmp(f_ext, ".html") == 0 || strcmp(f_ext, ".htm") == 0) {
             contenttype = "text/html";
-        }
-        else if (strcmp(f_ext, "txt") == 0) { 
+        } else if (strcmp(f_ext, ".css") == 0) {
+            contenttype = "text/css";
+        } else if (strcmp(f_ext, ".txt") == 0) { 
             contenttype = "text/plain"; 
-        }
-        else if (strcmp(f_ext, ".jpeg") == 0 || strcmp(f_ext, ".jpg") == 0) {
+        } else if (strcmp(f_ext, ".jpeg") == 0 || strcmp(f_ext, ".jpg") == 0) {
             contenttype = "image/jpeg"; 
-        }
-        else if (strcmp(f_ext, ".png") == 0) { 
+        } else if (strcmp(f_ext, ".png") == 0) { 
             contenttype = "image/png"; 
-        }
-        else if (strcmp(f_ext, ".pdf") == 0) { 
+        } else if (strcmp(f_ext, ".pdf") == 0) { 
             contenttype = "application/pdf"; 
+        } else if (strcmp(f_ext, ".zip") == 0) { 
+            contenttype = "application/zip"; 
         }
     }
 
@@ -98,6 +99,25 @@ void handle_GET(int cli_socket, char* filePath) {
     }
 }
 
+void url_preprocessing(char *url) {
+    char *pCheck, *pReplace;
+    pCheck = pReplace = strtok(url, "/");
+    // Two pointers pointing to the same characters on url
+    // pCheck is used to check if the next 3 characters is "%20", if so, 
+    // pReplace, pointing to those 3 character will be set to ' '
+    // Otherwise, it'll 
+    while(*pCheck != '\0') {
+
+        if (*pCheck == '%' && *(pCheck + 1) == '2' && *(pCheck + 2) == '0') {
+            *pReplace++ = ' ';
+            pCheck += 3;
+        } else {
+            *pReplace++ = *pCheck++;
+        }
+    }
+    *pCheck = '\0';
+}
+
 // Handle request from connection
 void handle_connection(int cli_socket) {
     // Buffer for request
@@ -133,6 +153,7 @@ void handle_connection(int cli_socket) {
         exit(EXIT_FAILURE);
     } else {
         url = strtok(url, "/");
+        url_preprocessing(url);
         handle_GET(cli_socket,url);
     }
     close(cli_socket);
