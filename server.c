@@ -19,9 +19,8 @@
 void handle_GET(int cli_socket, char* filePath) {
 
     //open requested file
-    /*FILE *f_fd = fopen(filePath, "r");
-    printf("%s\n",filePath);
-    if (!f_fd) {
+    FILE* f_fd = fopen(filePath, "rb");
+    if (f_fd == NULL) {
         char *res = "HTTP/1.1 404 NOT FOUND\r\n";
         write(cli_socket, res, strlen(res));
         write(cli_socket, "\r\n", 4);
@@ -31,73 +30,70 @@ void handle_GET(int cli_socket, char* filePath) {
     }
 
     //Checking file size to set content-len
-    char contentlen[32] = "Content-Length: ";
     long f_size;
     fseek(f_fd, 0, SEEK_END);
     f_size = ftell(f_fd);
     rewind(f_fd);
-    /*char contentlen[32] = "Content-Length: ";
-    struct stat file_st;
-    long file_size;
-    if (stat(filePath+1, &file_st) == 0) {
-        file_size = file_st.st_size;
-        char len[sizeof(long)*8+1];
-        sprintf(len, "%ld", file_size);
-        strcat(contentlen, len);
-        strcat(contentlen, "\r\n");
-    }*/
-    //printf("%ld\n", f_size);
+    char f_len[sizeof(long)*8+1];
+    sprintf(f_len, "%ld", f_size);
 
     //Checking file extension to set content-type
-    /*char *file_ext;
+    char *f_ext;
     char *contenttype = DEFAULT_EXT;
-    file_ext = strrchr(filePath, '.');
-    if (strcmp(file_ext, ".html") == 0 || strcmp(file_ext, ".htm") == 0) {
-        contenttype = "Content-Type: text/html\r\n";
+    f_ext = strrchr(filePath, '.');
+    if (strcmp(f_ext, ".html") == 0 || strcmp(f_ext, ".htm") == 0) {
+        contenttype = "text/html";
     }
-    else if (strcmp(file_ext, "txt") == 0) { 
-        contenttype = "Content-Type: text/plain\r\n"; 
+    else if (strcmp(f_ext, "txt") == 0) { 
+        contenttype = "text/plain"; 
     }
-    else if (strcmp(file_ext, ".jpeg") == 0 || strcmp(file_ext, ".jpg") == 0) {
-        contenttype = "Content-Type: image/jpeg\r\n"; 
+    else if (strcmp(f_ext, ".jpeg") == 0 || strcmp(f_ext, ".jpg") == 0) {
+        contenttype = "image/jpeg"; 
     }
-    else if (strcmp(file_ext, ".png") == 0) { 
-        contenttype = "Content-Type: image/png\r\n"; 
+    else if (strcmp(f_ext, ".png") == 0) { 
+        contenttype = "image/png"; 
     }
-    else if (strcmp(file_ext, ".pdf") == 0) { 
-        contenttype = "Content-Type: application/pdf\r\n"; 
+    else if (strcmp(f_ext, ".pdf") == 0) { 
+        contenttype = "application/pdf"; 
+    }
+
+    // Allocate memory for the file data
+    char *f_data = malloc(f_size);
+    if (!f_data) {
+        perror("websever: Failed to allocate memory");
+        fclose(f_fd);
+        return;
+    }
+
+    // Read the file data into memory
+    int bytes_read = fread(f_data, 1, f_size, f_fd);
+    if (bytes_read != f_size) {
+        perror("websever: Failed to read file");
+        fclose(f_fd);
+        free(f_data);
+        return;
     }
 
     //Send response message
-    char *res = "HTTP/1.1 200 OK\r\n";
-    write(cli_socket, res, strlen(res));
-    write(cli_socket, contentlen, strlen(contentlen));
-    write(cli_socket, contenttype, strlen(contenttype));
-    write(cli_socket, "\r\n", 4);
-    // TO DO: if file exist, save the content to buffer
-     {
-        size_t b_read = read(file_fd, file_buf, sizeof(file_buf));
-        if (b_read == 0) // We're done reading from the file
-            break;
+    char res_buffer[1024];
+    sprintf(res_buffer, "HTTP/1.1 200 OK\r\n"
+                        "Content-Type: %s\r\n"
+                        "Content-Length: %s\r\n"
+                        "\r\n", contenttype, f_len);
+    send(cli_socket, res_buffer, strlen(res_buffer), 0);
 
-        char *p = file_buf;
-        while (b_read > 0) {
-            ssize_t b_sent = send(cli_socket, p, b_read, 0);
-            if (b_sent <= 0) {
-                perror("webserver: write error");
-				close(file_fd);
-				exit(EXIT_FAILURE);
-            }
-            p += b_sent;
-            b_read -= b_sent;
+    // Send the file data to the client
+    int bytes_sent = 0;
+    while (bytes_sent < f_size) {
+        int result = send(cli_socket, f_data + bytes_sent, f_size - bytes_sent, 0);
+        if (result < 0) {
+            perror("websever: Failed to send file data");
+            fclose(f_fd);
+            free(f_data);
+            return;
         }
+        bytes_sent += result;
     }
-    /*if (read(file_fd, file_buf, file_size) < 0) {
-            perror("webserver: Read error.");
-	}*/
-
-    //fclose(f_fd);
-
 }
 
 void handle_connection(int cli_socket) {
@@ -136,88 +132,9 @@ void handle_connection(int cli_socket) {
     } 
     
     else {
-        //printf("URL: %s\n", url);
-        //handle_GET(cli_socket, url);
-
-        //open requested file
         url = strtok(url, "/");
-        FILE* f_fd = fopen(url, "rb");
-        if (f_fd == NULL) {
-            char *res = "HTTP/1.1 404 NOT FOUND\r\n";
-            write(cli_socket, res, strlen(res));
-            write(cli_socket, "\r\n", 4);
-            perror("webserver: ERROR404=File Not Found! Closing connection...");
-            close(cli_socket);
-            exit(EXIT_FAILURE);
-        }
-
-        //Checking file size to set content-len
-        long f_size;
-        fseek(f_fd, 0, SEEK_END);
-        f_size = ftell(f_fd);
-        rewind(f_fd);
-        char f_len[sizeof(long)*8+1];
-        sprintf(f_len, "%ld", f_size);
-
-        //Checking file extension to set content-type
-        char *f_ext;
-        char *contenttype = DEFAULT_EXT;
-        f_ext = strrchr(url, '.');
-        if (strcmp(f_ext, ".html") == 0 || strcmp(f_ext, ".htm") == 0) {
-            contenttype = "text/html";
-        }
-        else if (strcmp(f_ext, "txt") == 0) { 
-            contenttype = "text/plain"; 
-        }
-        else if (strcmp(f_ext, ".jpeg") == 0 || strcmp(f_ext, ".jpg") == 0) {
-            contenttype = "image/jpeg"; 
-        }
-        else if (strcmp(f_ext, ".png") == 0) { 
-            contenttype = "image/png"; 
-        }
-        else if (strcmp(f_ext, ".pdf") == 0) { 
-            contenttype = "application/pdf"; 
-        }
-
-        // Allocate memory for the file data
-        char *f_data = malloc(f_size);
-        if (!f_data) {
-            perror("Failed to allocate memory");
-            fclose(f_fd);
-            return;
-        }
-
-        // Read the file data into memory
-        int bytes_read = fread(f_data, 1, f_size, f_fd);
-        if (bytes_read != f_size) {
-            perror("Failed to read file");
-            fclose(f_fd);
-            free(f_data);
-            return;
-        }
-
-        //Send response message
-        char res_buffer[1024];
-        sprintf(res_buffer, "HTTP/1.1 200 OK\r\n"
-                            "Content-Type: %s\r\n"
-                            "Content-Length: %s\r\n"
-                            "\r\n", contenttype, f_len);
-        send(cli_socket, res_buffer, strlen(res_buffer), 0);
-
-        // Send the file data to the client
-        int bytes_sent = 0;
-        while (bytes_sent < f_size) {
-            int result = send(cli_socket, f_data + bytes_sent, f_size - bytes_sent, 0);
-            if (result < 0) {
-                perror("Failed to send file data");
-                fclose(f_fd);
-                free(f_data);
-                return;
-            }
-            bytes_sent += result;
-        }
+        handle_GET(cli_socket,url);
     }
-
     close(cli_socket);
 }
 
