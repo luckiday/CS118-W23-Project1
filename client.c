@@ -13,7 +13,7 @@ int main(int argc, char const *argv[]) {
   struct sockaddr_in serv_addr;
   char *hello =
       "GET /img_test.jpg HTTP/1.1\r\n\r\n";
-  char buffer[1024] = {0};
+  char buffer[4096] = {0};
 
   if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
     printf("\n Socket creation error \n");
@@ -35,6 +35,6 @@ int main(int argc, char const *argv[]) {
   }
   send(sock, hello, strlen(hello), 0);
 
-  valread = read(sock, buffer, 1024);
+  valread = read(sock, buffer, 4096);
   printf("%s\n", buffer);
 }
