@@ -18,8 +18,7 @@
 // Handle client's GET request
 void handle_GET(int cli_socket, char* filePath) {
     // open requested file
-    // printf("%s\n",filePath);
-    FILE* f_fd = fopen("binaryfile", "r");
+    FILE* f_fd = fopen(filePath, "r");
     if (f_fd == NULL) {
         char res_buffer[1024];
         sprintf(res_buffer, "HTTP/1.1 404 NOT FOUND\r\n"
@@ -37,12 +36,10 @@ void handle_GET(int cli_socket, char* filePath) {
     rewind(f_fd);
     char f_len[sizeof(long)*8+1];
     sprintf(f_len, "%ld", f_size);
-    printf("%s\n",f_len);
 
     // Checking file extension to set content-type
     char *f_ext;
     char *contenttype = DEFAULT_EXT;
-    printf("%s\n",contenttype);
     if (strchr(filePath, '.') != NULL) {
         f_ext = strrchr(filePath, '.');
         if (strcmp(f_ext, ".html") == 0 || strcmp(f_ext, ".htm") == 0) {
