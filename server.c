@@ -97,6 +97,8 @@ void handle_GET(int cli_socket, char* filePath) {
         }
         bytes_sent += result;
     }
+    fclose(f_fd);
+    free(f_data);
 }
 
 // Replace %20 to white space in address 
@@ -127,7 +129,7 @@ void handle_connection(int cli_socket) {
     char *method;
     char *url;
     char *httpvers;
-    char *header, *value;
+    //char *header, *value;
 
     // Read and parse the request line of the header
     int valread = read(cli_socket, req_buffer, 1024);
@@ -148,7 +150,7 @@ void handle_connection(int cli_socket) {
     if (strcmp(method, "GET") != 0) {
         char *res = "HTTP/1.1 400 BAD REQUEST\r\n";
         write(cli_socket, res, strlen(res));
-        write(cli_socket, "\r\n", 4);
+        write(cli_socket, "\r\n", 3);
         perror("webserver: Invalid request method");
         close(cli_socket);
         exit(EXIT_FAILURE);
@@ -157,6 +159,7 @@ void handle_connection(int cli_socket) {
         url_preprocessing(url);
         handle_GET(cli_socket,url);
     }
+    
     close(cli_socket);
 }
 
@@ -202,7 +205,6 @@ int main(int argc, char const *argv[]) {
 
     // Server listening indefinitely
     while(1) {
-
         if ((newsock_fd = accept(server_fd, (struct sockaddr *) &cli_addr, (socklen_t * ) & addrlen)) == -1) {
             perror("webserver:  accept() failure error.");
             exit(EXIT_FAILURE);
