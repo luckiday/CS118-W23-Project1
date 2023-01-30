@@ -99,6 +99,7 @@ void handle_GET(int cli_socket, char* filePath) {
     }
 }
 
+// Replace %20 to white space in address 
 void url_preprocessing(char *url) {
     char *pCheck, *pReplace;
     pCheck = pReplace = strtok(url, "/");
