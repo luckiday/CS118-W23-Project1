@@ -12,49 +12,54 @@
 #define PORT 15635
 #define BACKLOG 5
 #define MAX_MSG_LEN 1024
-#define MAX_BLOCK_SIZE 4096
 
-#define DEFAULT_EXT "Content-Type: application/octet-stream"
+#define DEFAULT_EXT "application/octet-stream"
 
+// Handle client's GET request
 void handle_GET(int cli_socket, char* filePath) {
-
-    //open requested file
-    FILE* f_fd = fopen(filePath, "rb");
+    // open requested file
+    // printf("%s\n",filePath);
+    FILE* f_fd = fopen("binaryfile", "r");
     if (f_fd == NULL) {
-        char *res = "HTTP/1.1 404 NOT FOUND\r\n";
-        write(cli_socket, res, strlen(res));
-        write(cli_socket, "\r\n", 4);
+        char res_buffer[1024];
+        sprintf(res_buffer, "HTTP/1.1 404 NOT FOUND\r\n"
+                            "\r\n");
+        send(cli_socket, res_buffer, strlen(res_buffer), 0);
         perror("webserver: ERROR404=File Not Found! Closing connection...");
         close(cli_socket);
         exit(EXIT_FAILURE);
     }
 
-    //Checking file size to set content-len
+    // Checking file size to set content-len
     long f_size;
     fseek(f_fd, 0, SEEK_END);
     f_size = ftell(f_fd);
     rewind(f_fd);
     char f_len[sizeof(long)*8+1];
     sprintf(f_len, "%ld", f_size);
+    printf("%s\n",f_len);
 
-    //Checking file extension to set content-type
+    // Checking file extension to set content-type
     char *f_ext;
     char *contenttype = DEFAULT_EXT;
-    f_ext = strrchr(filePath, '.');
-    if (strcmp(f_ext, ".html") == 0 || strcmp(f_ext, ".htm") == 0) {
-        contenttype = "text/html";
-    }
-    else if (strcmp(f_ext, "txt") == 0) { 
-        contenttype = "text/plain"; 
-    }
-    else if (strcmp(f_ext, ".jpeg") == 0 || strcmp(f_ext, ".jpg") == 0) {
-        contenttype = "image/jpeg"; 
-    }
-    else if (strcmp(f_ext, ".png") == 0) { 
-        contenttype = "image/png"; 
-    }
-    else if (strcmp(f_ext, ".pdf") == 0) { 
-        contenttype = "application/pdf"; 
+    printf("%s\n",contenttype);
+    if (strchr(filePath, '.') != NULL) {
+        f_ext = strrchr(filePath, '.');
+        if (strcmp(f_ext, ".html") == 0 || strcmp(f_ext, ".htm") == 0) {
+            contenttype = "text/html";
+        }
+        else if (strcmp(f_ext, "txt") == 0) { 
+            contenttype = "text/plain"; 
+        }
+        else if (strcmp(f_ext, ".jpeg") == 0 || strcmp(f_ext, ".jpg") == 0) {
+            contenttype = "image/jpeg"; 
+        }
+        else if (strcmp(f_ext, ".png") == 0) { 
+            contenttype = "image/png"; 
+        }
+        else if (strcmp(f_ext, ".pdf") == 0) { 
+            contenttype = "application/pdf"; 
+        }
     }
 
     // Allocate memory for the file data
@@ -74,7 +79,7 @@ void handle_GET(int cli_socket, char* filePath) {
         return;
     }
 
-    //Send response message
+    // Send response message
     char res_buffer[1024];
     sprintf(res_buffer, "HTTP/1.1 200 OK\r\n"
                         "Content-Type: %s\r\n"
@@ -96,18 +101,18 @@ void handle_GET(int cli_socket, char* filePath) {
     }
 }
 
+// Handle request from connection
 void handle_connection(int cli_socket) {
-    // buffer for request
+    // Buffer for request
     char req_buffer[MAX_MSG_LEN];
-    // buffers to store request line 
+    // Buffers to store request line 
     char *method;
     char *url;
     char *httpvers;
     char *header, *value;
 
-    // read and parse the request line of the header
+    // Read and parse the request line of the header
     int valread = read(cli_socket, req_buffer, 1024);
-
     method = strtok(req_buffer, " ");
     printf("Method: %s\n", method);
     url = strtok(NULL, " ");
@@ -121,7 +126,7 @@ void handle_connection(int cli_socket) {
     }
     printf("%s: %s\n", header, value);*/
 
-    // server only handle request of GET method
+    // Server only handle request of GET method
     if (strcmp(method, "GET") != 0) {
         char *res = "HTTP/1.1 400 BAD REQUEST\r\n";
         write(cli_socket, res, strlen(res));
@@ -129,15 +134,14 @@ void handle_connection(int cli_socket) {
         perror("webserver: Invalid request method");
         close(cli_socket);
         exit(EXIT_FAILURE);
-    } 
-    
-    else {
+    } else {
         url = strtok(url, "/");
         handle_GET(cli_socket,url);
     }
     close(cli_socket);
 }
 
+// Set up server socket and listening for connection 
 int main(int argc, char const *argv[]) {
     int server_fd, newsock_fd;
 

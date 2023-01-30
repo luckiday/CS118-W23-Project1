@@ -12,7 +12,7 @@ int main(int argc, char const *argv[]) {
   int sock = 0, valread;
   struct sockaddr_in serv_addr;
   char *hello =
-      "GET /img_test.jpg HTTP/1.1\r\n\r\n";
+      "GET /binaryfile HTTP/1.1\r\n\r\n";
   char buffer[4096] = {0};
 
   if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
